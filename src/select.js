@@ -938,6 +938,7 @@
           if (data){
             if ($select.multiple){
               var resultMultiple = [];
+              if(angular.isDefined(inputValue)) $select.selected = inputValue;
               var checkFnMultiple = function(list, value){
                 if (!list || !list.length) return;
                 for (var p = list.length - 1; p >= 0; p--) {
