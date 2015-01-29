@@ -69,6 +69,7 @@ describe('ui-select tests', function() {
       if (attrs.theme !== undefined) { attrsHtml += ' theme="' + attrs.theme + '"'; }
       if (attrs.tabindex !== undefined) { attrsHtml += ' tabindex="' + attrs.tabindex + '"'; }
       if (attrs.tagging !== undefined) { attrsHtml += ' tagging="' + attrs.tagging + '"'; }
+      if (attrs.title !== undefined) { attrsHtml += ' title="' + attrs.title + '"'; }
     }
 
     return compileTemplate(
@@ -156,6 +157,21 @@ describe('ui-select tests', function() {
     var el = createUiSelect();
 
     expect(getMatchLabel(el)).toEqual('Adam');
+  });
+  
+  it('should correctly render initial state with track by feature', function() {
+    var el = compileTemplate(
+      '<ui-select ng-model="selection.selected"> \
+        <ui-select-match placeholder="Pick one...">{{$select.selected.name}}</ui-select-match> \
+        <ui-select-choices repeat="person in people | filter: $select.search track by person.name"> \
+          <div ng-bind-html="person.name | highlight: $select.search"></div> \
+          <div ng-bind-html="person.email | highlight: $select.search"></div> \
+        </ui-select-choices> \
+      </ui-select>'
+    );
+    scope.selection.selected =  { name: 'Samantha',  email: 'something different than array source',  group: 'bar', age: 30 };
+    scope.$digest();
+    expect(getMatchLabel(el)).toEqual('Samantha');
   });
 
   it('should display the choices when activated', function() {
@@ -404,7 +420,7 @@ describe('ui-select tests', function() {
       beforeEach(function() {
         disablePerson({
           disableAttr : 'inactive',
-          disableBool : true,
+          disableBool : true
         });
         this.el = createUiSelect({
           disabled: 'person.inactive'
@@ -437,7 +453,7 @@ describe('ui-select tests', function() {
       beforeEach(function() {
         disablePerson({
           disableAttr : 'active',
-          disableBool : false,
+          disableBool : false
         });
         this.el = createUiSelect({
           disabled: '!person.active'
@@ -1123,13 +1139,13 @@ describe('ui-select tests', function() {
         expect(el.find('.ui-select-match-item').length).toBe(0);
     });
 
-    it('should set model as an empty array if ngModel isnt defined', function () {
+    it('should set model as an empty array if ngModel isnt defined after an item is selected', function () {
 
       // scope.selection.selectedMultiple = [];
       var el = createUiSelectMultiple();
-
+      expect(scope.selection.selectedMultiple instanceof Array).toBe(false);
+      clickItem(el, 'Samantha');
       expect(scope.selection.selectedMultiple instanceof Array).toBe(true);
-
     });
 
     it('should render initial selected items', function() {
@@ -1655,5 +1671,33 @@ describe('ui-select tests', function() {
       });
     });
 
+  });
+
+  describe('accessibility', function() {
+    it('should have baseTitle in scope', function() {
+      expect(createUiSelect().scope().$select.baseTitle).toBe('Select box');
+      expect(createUiSelect().scope().$select.focusserTitle).toBe('Select box focus');
+      expect(createUiSelect({ title: 'Choose a person' }).scope().$select.baseTitle).toBe('Choose a person');
+      expect(createUiSelect({ title: 'Choose a person' }).scope().$select.focusserTitle).toBe('Choose a person focus');
+    });
+
+    it('should have aria-label on all input and button elements', function() {
+      checkTheme();
+      checkTheme('select2');
+      checkTheme('selectize');
+      checkTheme('bootstrap');
+
+      function checkTheme(theme) {
+        var el = createUiSelect({ theme: theme});
+        checkElements(el.find('input'));
+        checkElements(el.find('button'));
+
+        function checkElements(els) {
+          for (var i = 0; i < els.length; i++) {
+            expect(els[i].attributes['aria-label']).toBeTruthy();
+          };
+        }
+      }
+    });
   });
 });

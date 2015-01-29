@@ -84,6 +84,7 @@
     };
   }
 
+  var latestId = 0;
   angular.module('ui.select', [])
 
   .constant('uiSelectConfig', {
@@ -91,7 +92,10 @@
     searchEnabled: true,
     placeholder: '', // Empty by default, like HTML tag <select>
     refreshDelay: 1000, // In milliseconds
-    closeOnSelect: true
+    closeOnSelect: true,
+    generateId: function() {
+      return latestId++;
+    }
   })
 
   // See Rename minErr and make it accessible from outside https://github.com/angular/angular.js/issues/6913
@@ -892,6 +896,11 @@
 
         var searchInput = element.querySelectorAll('input.ui-select-search');
 
+        $select.generatedId = uiSelectConfig.generateId();
+        $select.baseTitle = attrs.title || 'Select box';
+        $select.focusserTitle = $select.baseTitle + ' focus';
+        $select.focusserId = 'focusser-' + $select.generatedId;
+
         $select.multiple = angular.isDefined(attrs.multiple) && (
             attrs.multiple === '' ||
             attrs.multiple.toLowerCase() === 'multiple' ||
@@ -944,6 +953,13 @@
                 for (var p = list.length - 1; p >= 0; p--) {
                   locals[$select.parserResult.itemName] = list[p];
                   result = $select.parserResult.modelMapper(scope, locals);
+                  if($select.parserResult.trackByExp){
+                      var matches = /\.(.+)/.exec($select.parserResult.trackByExp);
+                      if(matches.length>0 && result[matches[1]] == value[matches[1]]){
+                          resultMultiple.unshift(list[p]);
+                          return true;
+                      }
+                  }
                   if (result == value){
                     resultMultiple.unshift(list[p]);
                     return true;
@@ -984,7 +1000,7 @@
         };
 
         //Idea from: https://github.com/ivaynberg/select2/blob/79b5bf6db918d7560bdd959109b7bcfb47edaf43/select2.js#L1954
-        var focusser = angular.element("<input ng-disabled='$select.disabled' class='ui-select-focusser ui-select-offscreen' type='text' aria-haspopup='true' role='button' />");
+        var focusser = angular.element("<input ng-disabled='$select.disabled' class='ui-select-focusser ui-select-offscreen' type='text' id='{{ $select.focusserId }}' aria-label='{{ $select.focusserTitle }}' aria-haspopup='true' role='button' />");
 
         if(attrs.tabindex){
           //tabindex might be an expression, wait until it contains the actual value before we set the focusser tabindex
@@ -1110,8 +1126,13 @@
             if (oldValue != newValue)
               ngModel.$modelValue = null; //Force scope model value and ngModel value to be out of sync to re-run formatters
           });
+          $select.firstPass = true; // so the form doesn't get dirty as soon as it loads
           scope.$watchCollection('$select.selected', function() {
-            ngModel.$setViewValue(Date.now()); //Set timestamp as a unique string to force changes
+            if (!$select.firstPass) {
+              ngModel.$setViewValue(Date.now()); //Set timestamp as a unique string to force changes
+            } else {
+              $select.firstPass = false;
+            }
           });
           focusser.prop('disabled', true); //Focusser isn't needed if multiple
         }else{
