@@ -380,9 +380,18 @@
       return isDisabled;
     };
 
+        ctrl.getSearchEnabled = function(){
+            return ctrl.searchEnabled;
+        };
 
     // When the user selects an item with ENTER or clicks the dropdown
     ctrl.select = function(item, skipFocusser, $event) {
+        // To remove focus when search is disabled,
+        // inorder to prevent keyboard opening in the touch devices.
+        // Run disable-search.html example in the touch devices.
+        var temp = skipFocusser();
+        skipFocusser = !temp;
+
       if (item === undefined || !item._uiSelectChoiceDisabled) {
 
         if ( ! ctrl.items && ! ctrl.search ) return;
@@ -1253,7 +1262,7 @@
           choices.attr('ng-repeat', RepeatParser.getNgRepeatExpression($select.parserResult.itemName, '$select.items', $select.parserResult.trackByExp, groupByExp))
               .attr('ng-if', '$select.open') //Prevent unnecessary watches when dropdown is closed
               .attr('ng-mouseenter', '$select.setActiveItem('+$select.parserResult.itemName +')')
-              .attr('ng-click', '$select.select(' + $select.parserResult.itemName + ',false,$event)');
+              .attr('ng-click', '$select.select(' + $select.parserResult.itemName + ',$select.getSearchEnabled,$event)');
 
           var rowsInner = element.querySelectorAll('.ui-select-choices-row-inner');
           if (rowsInner.length !== 1) throw uiSelectMinErr('rows', "Expected 1 .ui-select-choices-row-inner but got '{0}'.", rowsInner.length);
